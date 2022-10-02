@@ -10,7 +10,6 @@ notify-rust = "^3"
 winconsole = "^0.8"
 beep = "^0.3"
 rodio = "^0.14"
-chrono = "^0.4"
 ref_thread_local = "0.1"
 
 [dev-dependencies]

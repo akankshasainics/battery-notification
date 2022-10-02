@@ -378,7 +378,6 @@ name = "hello_cargo"
 version = "0.1.0"
 dependencies = [
  "beep",
- "chrono",
  "notify-rust",
  "ref_thread_local",
  "rodio",

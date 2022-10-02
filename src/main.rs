@@ -3,7 +3,6 @@ extern crate ref_thread_local;
 use std::env;
 use std::path::PathBuf;
 use std::{fs, time::Duration};
-use chrono;
 extern crate notify_rust;
 extern crate rodio;
 use notify_rust::Notification;
@@ -14,6 +13,8 @@ use rodio::source::{SineWave, Source};
 const DEFAULT_BATTERY_DIR: &'static str = "/sys/class/power_supply/BAT0/";
 const STATUS_FILE: &'static str = "status";
 const CAPACITY_FILE: &'static str = "capacity";
+const FIRST_WARNING_BATTERY: u32 = 10;
+const SECOND_WARNING_BATTERY: u32 = 5;
 
 ref_thread_local! {
     static managed STREAM: (OutputStream, OutputStreamHandle) = OutputStream::try_default().unwrap();
@@ -65,11 +66,9 @@ fn send_notification(battery_capacity: u32) {
         eprintln!("Dry run: Send Notification {}", battery_capacity);
         return
     }
-    eprintln!("Sending Notification");
-    let time =  chrono::offset::Local::now();
     let result = Notification::new()
     .summary("Please Connect Charger")
-    .body(&("Battery power less than ".to_string() + &battery_capacity.to_string() + " %, You might want to connect charger" + &time.to_string()))
+    .body(&("Remaining Battery power is ".to_string() + &battery_capacity.to_string() + " %, You might want to connect charger"))
     .icon("dialog-information")
     .show();
     if result.is_err(){
@@ -79,25 +78,24 @@ fn send_notification(battery_capacity: u32) {
 }
 
 fn act(){
+    let time_gap_bt_notifcations: u64 = 300;
     if is_charging(){
-        eprintln!("Charing.");
         return;
     }
     let battery_status = battery_capacity();
-    eprintln!("Battery capacity: {}", battery_status);
-    if battery_status <= 10 {
+    if battery_status <= FIRST_WARNING_BATTERY {
         send_notification(battery_status);
     }
-    while battery_capacity() <=5 && !is_charging(){
+    while battery_capacity() <= SECOND_WARNING_BATTERY && !is_charging(){
         play_sound(Duration::from_secs_f32(0.25));
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_secs(time_gap_bt_notifcations));
     }
 }
 
 fn main() {
-        eprintln!("Started");
+        let time_interval: u64 = 300;
         loop {
             act();
-            std::thread::sleep(std::time::Duration::from_secs(3));
+            std::thread::sleep(std::time::Duration::from_secs(time_interval));
         }
 }
